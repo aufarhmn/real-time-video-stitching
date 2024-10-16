@@ -23,7 +23,7 @@ def stitch_frames(frame1, frame2, homography):
     warped_frame1[0:frame2.shape[0], 0:frame2.shape[1]] = frame2
     return warped_frame1
 
-def capture_and_calibrate(camera_index1=2, camera_index2=0):
+def capture_and_calibrate(camera_index1=2, camera_index2=4):
     cap1 = cv2.VideoCapture(camera_index1)
     cap2 = cv2.VideoCapture(camera_index2)
 
@@ -53,7 +53,7 @@ def capture_and_calibrate(camera_index1=2, camera_index2=0):
     cap1.release()
     cap2.release()
 
-def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
+def capture_and_stitch(camera_index1=2, camera_index2=4, homography=None):
     cap1 = cv2.VideoCapture(camera_index1)
     cap2 = cv2.VideoCapture(camera_index2)
 
@@ -83,7 +83,7 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    result = capture_and_calibrate(camera_index1=2, camera_index2=0)
+    result = capture_and_calibrate(camera_index1=2, camera_index2=4)
 
     if result is not None:
         homography, frame1, frame2 = result
@@ -92,4 +92,4 @@ if __name__ == "__main__":
         cv2.imwrite("camera2_image.jpg", frame2)
         print("Calibration images saved: camera1_image.jpg, camera2_image.jpg")
 
-        capture_and_stitch(camera_index1=2, camera_index2=0, homography=homography)
+        capture_and_stitch(camera_index1=2, camera_index2=4, homography=homography)
