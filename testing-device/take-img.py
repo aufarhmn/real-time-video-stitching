@@ -1,5 +1,7 @@
 import cv2
 
+# Taking image from camera directly
+# Works well when cameras are placed inside with no extreme condition
 def capture_and_save_images(camera_index1=2, camera_index2=0, filename1="camera1_image.jpg", filename2="camera2_image.jpg"):
     cap1 = cv2.VideoCapture(camera_index1)
     cap2 = cv2.VideoCapture(camera_index2)

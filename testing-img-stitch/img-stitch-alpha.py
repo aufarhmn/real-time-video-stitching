@@ -56,7 +56,7 @@ def stitch_images_homography(image1_path, image2_path, output_path="stitched_ima
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    image1_path = "camera1_image.jpg"
-    image2_path = "camera2_image.jpg"
+    image1_path = "1a.jpg"
+    image2_path = "1b.jpg"
 
     stitch_images_homography(image1_path, image2_path)

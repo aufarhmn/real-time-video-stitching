@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 
-# Version 1
-# Camera Position: Not Flipped
-# Frames: 640x480 
-# Method:  Full Homography
+# Version 2
+# Camera Position: Flipped
+# Frames: 1280x720
+# Method: Full Homography
 # Feature Extraction: ORB
 def calibrate_homography(frame1, frame2):
     orb = cv2.ORB_create()
@@ -23,14 +23,26 @@ def calibrate_homography(frame1, frame2):
     return H
 
 def stitch_frames(frame1, frame2, homography):
+    # Warp frame1 to align with frame2 using the homography
     warped_frame1 = cv2.warpPerspective(frame1, homography, (frame1.shape[1] + frame2.shape[1], frame1.shape[0]))
-
-    warped_frame1[0:frame2.shape[0], 0:frame2.shape[1]] = frame2
-    return warped_frame1
+    
+    # Create a blank canvas to place both images
+    stitched_frame = np.copy(warped_frame1)
+    
+    # Place frame2 on the left part of the stitched frame
+    stitched_frame[0:frame2.shape[0], 0:frame2.shape[1]] = frame2
+    
+    return stitched_frame
 
 def capture_and_calibrate(camera_index1=2, camera_index2=0):
     cap1 = cv2.VideoCapture(camera_index1)
     cap2 = cv2.VideoCapture(camera_index2)
+
+    # Set resolution to 1280x720
+    cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     if not cap1.isOpened():
         print(f"Error: Camera {camera_index1} could not be opened.")
@@ -43,6 +55,10 @@ def capture_and_calibrate(camera_index1=2, camera_index2=0):
     ret2, frame2 = cap2.read()
 
     if ret1 and ret2:
+        # Flip frames upside down to correct orientation
+        frame1 = cv2.flip(frame1, 0)
+        frame2 = cv2.flip(frame2, 0)
+
         print("Calibrating homography...")
         homography = calibrate_homography(frame1, frame2)
         if homography is None:
@@ -62,6 +78,12 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
     cap1 = cv2.VideoCapture(camera_index1)
     cap2 = cv2.VideoCapture(camera_index2)
 
+    # Set resolution to 1280x720
+    cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     if homography is None:
         print("Error: No homography matrix provided.")
         return
@@ -76,6 +98,11 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
             print("Failed to capture frames from one or both cameras.")
             break
 
+        # Flip frames upside down to correct orientation
+        frame1 = cv2.flip(frame1, 0)
+        frame2 = cv2.flip(frame2, 0)
+
+        # Stitch the frames together
         stitched_frame = stitch_frames(frame1, frame2, homography)
 
         cv2.imshow("Stitched Video", stitched_frame)
