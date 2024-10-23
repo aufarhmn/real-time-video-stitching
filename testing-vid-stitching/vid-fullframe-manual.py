@@ -127,9 +127,8 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
         print("Error: No homography matrix provided.")
         return
 
-    # Set up video writer to save the stitched video
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Use 'XVID' for .avi format
-    out = cv2.VideoWriter('stitched_output.mp4', fourcc, 20.0, (2560, 720))  # Adjust resolution if needed
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('stitched_output.mp4', fourcc, 20.0, (2560, 720))
 
     print("Recording stitched video for 5 seconds...")
 
@@ -148,10 +147,8 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, homography=None):
 
         stitched_frame = stitch_frames(frame1, frame2, homography)
 
-        # Show the stitched frame
         cv2.imshow("Stitched Video", stitched_frame)
 
-        # Write the stitched frame to the output file
         out.write(stitched_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):

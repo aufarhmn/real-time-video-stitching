@@ -45,22 +45,19 @@ def manual_calibrate_translation(img1, img2):
     src_pts = np.float32(selected_points_img1).reshape(-1, 1, 2)
     dst_pts = np.float32(selected_points_img2).reshape(-1, 1, 2)
 
-    # Estimate a simple translation matrix
     affine_matrix, _ = cv2.estimateAffinePartial2D(src_pts, dst_pts)
     translation_matrix = np.eye(3)
     translation_matrix[:2] = affine_matrix
     return translation_matrix
 
 def stitch_frames(frame1, frame2, translation_matrix):
-    # Apply the translation to frame1
     width = frame1.shape[1] + frame2.shape[1]
     height = frame1.shape[0]
     warped_frame1 = cv2.warpPerspective(frame1, translation_matrix, (width, height))
-    # Blend the overlapping region
+
     stitched_frame = np.copy(warped_frame1)
     stitched_frame[0:frame2.shape[0], 0:frame2.shape[1]] = frame2
 
-    # Blend overlapping areas
     alpha = 0.5
     blend_width = 100
     overlap_start = frame2.shape[1] - blend_width
@@ -144,9 +141,8 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, translation_matrix=None
         print("Error: No translation matrix provided.")
         return
 
-    # Set up video writer to save the stitched video
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Use 'XVID' for .avi format
-    out = cv2.VideoWriter('stitched_output.mp4', fourcc, 20.0, (2560, 720))  # Adjust resolution if needed
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('stitched_output.mp4', fourcc, 20.0, (2560, 720))
 
     print("Recording stitched video for 5 seconds...")
 
@@ -165,10 +161,8 @@ def capture_and_stitch(camera_index1=2, camera_index2=0, translation_matrix=None
 
         stitched_frame = stitch_frames(frame1, frame2, translation_matrix)
 
-        # Show the stitched frame
         cv2.imshow("Stitched Video", stitched_frame)
 
-        # Write the stitched frame to the output file
         out.write(stitched_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
