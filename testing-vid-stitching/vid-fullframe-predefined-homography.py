@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-# Version 6.1
+# Version 7
 # Camera Position: Not Flipped
 # Frames: 1280x720
 # Adding Interactive Stitching

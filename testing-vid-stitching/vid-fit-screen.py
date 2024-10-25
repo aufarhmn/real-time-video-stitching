@@ -1,15 +1,15 @@
 import cv2
 import numpy as np
 
-# Version 6
+# Version 6.2
 # Camera Position: Not Flipped
 # Frames: 1280x720
-# Adding Interactive Dragging
+# Adding Interactive Stitching with Aligned Normal Screen Size
 # Adding Delayed Frame Extraction
 # Adding Homography Calculation
 dragging = False
-start_x, start_y = 0, 0
-offset_x, offset_y = 0, 0
+x_start, y_start = 0, 0
+x_offset = 0
 
 def extract_frame_after_delay(video_path, delay_seconds):
     cap = cv2.VideoCapture(video_path)
@@ -59,28 +59,27 @@ def calculate_homography_from_delayed_frames(video1_path, video2_path, delay_sec
         print("Not enough matches found to compute homography.")
         return None, None
 
-def on_mouse(event, x, y, flags, param):
-    global dragging, start_x, start_y, offset_x, offset_y
-
+def mouse_drag(event, x, y, flags, param):
+    global dragging, x_start, x_offset
     if event == cv2.EVENT_LBUTTONDOWN:
         dragging = True
-        start_x, start_y = x, y
+        x_start = x
 
-    elif event == cv2.EVENT_MOUSEMOVE and dragging:
-        offset_x += x - start_x
-        offset_y += y - start_y
-        start_x, start_y = x, y
+    elif event == cv2.EVENT_MOUSEMOVE:
+        if dragging:
+            x_offset += x - x_start
+            x_start = x
 
     elif event == cv2.EVENT_LBUTTONUP:
         dragging = False
 
 def stitch_video_frames(video1_path, video2_path, output_path, H, frame_shape):
-    global offset_x, offset_y
+    global x_offset
     cap1 = cv2.VideoCapture(video1_path)
     cap2 = cv2.VideoCapture(video2_path)
 
     cv2.namedWindow("Stitched Video")
-    cv2.setMouseCallback("Stitched Video", on_mouse)
+    cv2.setMouseCallback("Stitched Video", mouse_drag)
 
     while True:
         ret1, frame1 = cap1.read()
@@ -108,11 +107,13 @@ def stitch_video_frames(video1_path, video2_path, output_path, H, frame_shape):
 
         final_stitched = np.where(overlap_area, blended_region, non_overlap_region)
 
-        # Apply dragging offsets
-        M = np.float32([[1, 0, offset_x], [0, 1, offset_y]])
-        final_view = cv2.warpAffine(final_stitched, M, (stitched_width, height))
+        visible_width = frame1.shape[1]
+        max_offset = stitched_width - visible_width
+        x_offset = max(0, min(x_offset, max_offset))
 
-        cv2.imshow("Stitched Video", final_view)
+        visible_region = final_stitched[:, x_offset:x_offset + visible_width]
+
+        cv2.imshow("Stitched Video", visible_region)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
