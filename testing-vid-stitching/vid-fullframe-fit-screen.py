@@ -44,19 +44,24 @@ def calculate_homography_from_delayed_frames(camera1_index, camera2_index):
         print("Error loading frames!")
         return None, None
 
+    # Convert to Grayscale for Keypoints Detection
     gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
+    # Automatic Feature Detection using ORB
     orb = cv2.ORB_create()
     kp1, des1 = orb.detectAndCompute(gray1, None)
-    kp2, des2 = orb.detectAndCompute(gray2, None)
+    kp2, des2 = orb.detectAndCompute(gray2, None)   
 
+    # Feature Matching using Brute Force Matcher
     bf = cv2.BFMatcher(cv2.NORM_HAMMING)
     matches = bf.knnMatch(des1, des2, k=2)
 
     src_pts = np.float32([kp1[m.queryIdx].pt for m, n in matches if m.distance < 0.75 * n.distance]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m, n in matches if m.distance < 0.75 * n.distance]).reshape(-1, 1, 2)
 
+    # Epipolar Implementation
+    # Minimum 8 points required for homography
     if len(src_pts) >= 8: 
         F, mask = cv2.findFundamentalMat(src_pts, dst_pts, cv2.FM_RANSAC)
 
@@ -149,7 +154,6 @@ if __name__ == "__main__":
     camera1_index = 2 # Index of the left camera
     camera2_index = 0 # Index of the right camera
 
-    # Delay in seconds to extract frames for homography calculation
     H, frame_shape = calculate_homography_from_delayed_frames(camera1_index, camera2_index)
 
     if H is not None:
