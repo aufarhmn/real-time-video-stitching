@@ -2,7 +2,11 @@ import cv2
 import numpy as np
 import time
 
-# Version 5: Adjusted for Video Input and Output Issues
+# Version 5
+# Camera Position: Flipped
+# Frames: 1280x720
+# Method: Translation
+# Feature Extraction: Manual
 selected_points_img1 = []
 selected_points_img2 = []
 
