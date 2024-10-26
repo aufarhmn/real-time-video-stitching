@@ -9,7 +9,7 @@ import numpy as np
 # Adding Delayed Frame Extraction
 # Adding Homography Calculation
 # Using Live Camera
-# TODO: MARKING LOCATION , IMPLEMENT DIM K AND D
+# TODO: MARKING LOCATION
 dragging = False
 x_start, y_start = 0, 0
 x_offset = 0
