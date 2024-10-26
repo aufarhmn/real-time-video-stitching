@@ -10,6 +10,9 @@ import numpy as np
 # Adding Homography Calculation
 # Using Live Camera
 # TODO: MARKING LOCATION
+
+# PERFORMANCE ISSUE WHEN EVERY FRAME IS PROCESSED TO UNDISTORT
+
 dragging = False
 x_start, y_start = 0, 0
 x_offset = 0
@@ -193,19 +196,16 @@ def stitch_video_frames(camera1_index, camera2_index, H, frame_shape):
         if not ret1 or not ret2:
             break
 
-        frame1_undistorted = undistort_fisheye_frame(frame1)
-        frame2_undistorted = undistort_fisheye_frame(frame2)
-
-        height, width = frame1_undistorted.shape[:2]
+        height, width = frame1.shape[:2]
         stitched_width = width * 2
         canvas = np.zeros((height, stitched_width, 3), dtype=np.uint8)
 
-        canvas[0:frame1_undistorted.shape[0], 0:frame1_undistorted.shape[1]] = frame1_undistorted
+        canvas[0:frame1.shape[0], 0:frame1.shape[1]] = frame1
 
-        warped_frame2 = cv2.warpPerspective(frame2_undistorted, H, (stitched_width, height))
+        warped_frame2 = cv2.warpPerspective(frame2, H, (stitched_width, height))
 
         overlap_mask = np.zeros_like(canvas, dtype=np.uint8)
-        overlap_mask[0:frame1_undistorted.shape[0], 0:frame1_undistorted.shape[1]] = 1  
+        overlap_mask[0:frame1.shape[0], 0:frame1.shape[1]] = 1  
 
         alpha = 0.5
         overlap_area = (overlap_mask & (warped_frame2 > 0)).astype(np.uint8)
@@ -215,7 +215,7 @@ def stitch_video_frames(camera1_index, camera2_index, H, frame_shape):
 
         final_stitched = np.where(overlap_area, blended_region, non_overlap_region)
 
-        visible_width = frame1_undistorted.shape[1]
+        visible_width = frame1.shape[1]
         max_offset = stitched_width - visible_width
         x_offset = max(0, min(x_offset, max_offset))
 
