@@ -61,6 +61,9 @@ def calculate_homography_from_delayed_frames(camera1_index, camera2_index):
     img1 = extract_frame_after_delay(camera1_index)
     img2 = extract_frame_after_delay(camera2_index)
 
+    # cv2.imwrite("img1.jpg", img1)
+    # cv2.imwrite("img2.jpg", img2)
+
     if img1 is None or img2 is None:
         print("Error loading frames!")
         return None, None
@@ -108,9 +111,28 @@ def draw_matches(img1, kp1, img2, kp2):
     global matched_keypoints_img
     global good_matches
 
+    screen_width = 1920
+    screen_height = 1080
+
     matched_keypoints_img = cv2.drawMatches(img1, kp1, img2, kp2, good_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
-    cv2.namedWindow("Matched Keypoints")
+    def resize_and_show():
+        img_height, img_width = matched_keypoints_img.shape[:2]
+
+        scale_width = screen_width / img_width
+        scale_height = screen_height / img_height
+        scale = min(scale_width, scale_height)
+
+        if scale < 1:
+            new_width = int(img_width * scale)
+            new_height = int(img_height * scale)
+            matched_keypoints_img_resized = cv2.resize(matched_keypoints_img, (new_width, new_height))
+        else:
+            matched_keypoints_img_resized = matched_keypoints_img
+
+        cv2.imshow("Matched Keypoints", matched_keypoints_img_resized)
+
+    cv2.namedWindow("Matched Keypoints", cv2.WINDOW_NORMAL)
     params = {
         "kp1": kp1,
         "kp2": kp2,
@@ -120,13 +142,15 @@ def draw_matches(img1, kp1, img2, kp2):
     cv2.setMouseCallback("Matched Keypoints", mouse_click, params)
 
     while True:
-        cv2.imshow("Matched Keypoints", matched_keypoints_img)
+        resize_and_show()
+
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             cv2.destroyWindow("Matched Keypoints")
             return True 
         elif key == ord('d'):
-            delete_selected_match(params)  
+            delete_selected_match(params)
+            resize_and_show()
 
 def delete_selected_match(params):
     global selected_match, good_matches
@@ -139,7 +163,7 @@ def delete_selected_match(params):
         kp1 = params["kp1"]
         img2 = params["img2"]
         kp2 = params["kp2"]
-        
+
         global matched_keypoints_img
         matched_keypoints_img = cv2.drawMatches(img1, kp1, img2, kp2, good_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
