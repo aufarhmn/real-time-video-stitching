@@ -17,16 +17,27 @@ x_offset = 0
 selected_match = -1
 good_matches = []
 
+# Replace with computed DIM, K, and D
+DIM=(1920, 1080)
+K=np.array([[1336.4921919893268, 0.0, 908.8692451447415], [0.0, 1340.0325057841567, 466.10657810710325], [0.0, 0.0, 1.0]])
+D=np.array([[0.019735576742026275], [0.2600139930451915], [-1.1954519511846629], [0.8408293625138502]])
+
+def undistort_fisheye_frame(frame):
+    h, w = frame.shape[:2]
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
+    undistorted_frame = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    return undistorted_frame
+
 def extract_frame_after_delay(camera_index):
     cap = cv2.VideoCapture(camera_index)
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, DIM[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, DIM[1])
 
     if not cap.isOpened():
         print(f"Error: Camera {camera_index} could not be opened.")
         return None
-    
+
     print("Warming up camera...")
     for _ in range(30):
         ret, frame = cap.read()
@@ -34,11 +45,14 @@ def extract_frame_after_delay(camera_index):
             print("Error: Could not warm up the camera.")
             cap.release()
             return None
-        
+
     print("Camera warmed up.")
     ret, frame = cap.read()
     cap.release()
-    return frame
+
+    undistorted_frame = undistort_fisheye_frame(frame)
+
+    return undistorted_frame
 
 def calculate_homography_from_delayed_frames(camera1_index, camera2_index):
     img1 = extract_frame_after_delay(camera1_index)
@@ -179,16 +193,19 @@ def stitch_video_frames(camera1_index, camera2_index, H, frame_shape):
         if not ret1 or not ret2:
             break
 
-        height, width = frame1.shape[:2]
+        frame1_undistorted = undistort_fisheye_frame(frame1)
+        frame2_undistorted = undistort_fisheye_frame(frame2)
+
+        height, width = frame1_undistorted.shape[:2]
         stitched_width = width * 2
         canvas = np.zeros((height, stitched_width, 3), dtype=np.uint8)
 
-        canvas[0:frame1.shape[0], 0:frame1.shape[1]] = frame1
+        canvas[0:frame1_undistorted.shape[0], 0:frame1_undistorted.shape[1]] = frame1_undistorted
 
-        warped_frame2 = cv2.warpPerspective(frame2, H, (stitched_width, height))
+        warped_frame2 = cv2.warpPerspective(frame2_undistorted, H, (stitched_width, height))
 
         overlap_mask = np.zeros_like(canvas, dtype=np.uint8)
-        overlap_mask[0:frame1.shape[0], 0:frame1.shape[1]] = 1  
+        overlap_mask[0:frame1_undistorted.shape[0], 0:frame1_undistorted.shape[1]] = 1  
 
         alpha = 0.5
         overlap_area = (overlap_mask & (warped_frame2 > 0)).astype(np.uint8)
@@ -198,7 +215,7 @@ def stitch_video_frames(camera1_index, camera2_index, H, frame_shape):
 
         final_stitched = np.where(overlap_area, blended_region, non_overlap_region)
 
-        visible_width = frame1.shape[1]
+        visible_width = frame1_undistorted.shape[1]
         max_offset = stitched_width - visible_width
         x_offset = max(0, min(x_offset, max_offset))
 
